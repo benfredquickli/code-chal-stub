@@ -1,52 +1,63 @@
-# Quickli code challenge stub
+# Code challenge
 
-Here is a working code base we've prepared for you. You should be able to stick in some environment variables and deploy it to Vercel to get it going in 5-10 minutes.
+## Finished thing
 
-## What's next?
+Build available at: https://code-chal-stub-jade.vercel.app/
 
-You should sus it out before you start the challenge. We've kept the project as simple as possible so it's easy to extend.
+Comments: most of the technical challenge here was figuring out how NextJS and NextAuth work. I spent a while trying to figure it out and then gave up and vibe coded it. I haven't reviewed the code closely and was more focused on the end result.
 
-Let us know when you're ready to start the challenge and we'll email it to you at the start of the 3 hour block.
+What is done
 
-## Key technologies
+* Device fingerprint is checked at login time. Fingerprint is randomised so you can test this from the same device
+* New users will only be able to use three devices (more accurately, three logins as each login uses a randomised fingerprint). TODO - check this, it might be 4
+* Existing users get a warning when they go over this instead of being blocked
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app` and is composed of the following:
+There is a lot more to do:
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org) (I fiddled about to get a bodgy version of credential auth working so that you don't need to worry about hooking up any oauth providers)
-- [Prisma](https://prisma.io)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+* name devices when you use them for the first time
+* have a way to deregister devices so you can remove old devices. This would need to be rate limited somehow.
 
-We don't actually use t3 at Quickli but there is a lot of overlap conceptually so I figure it's a decent intro to how our app works.
+Overall I don't feel happy with the code or the end result, I would want to review the code and talk through the approach if this was a real world thing.
 
-## Learn More
+## Problem: Prevent people sharing their Quickli login
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+Solution:
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+Do what Netflix do (I think).
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+There are two parts to the solution:
 
-## How do I deploy this?
+* Prevent a single login being used in multiple places simultaneously  
+* Limit the number of devices that can use a single login, by using fingerprintJS to identify devices.  
+* Have users register devices and be able to unregister them as needed. Limit how often that can be done.
 
-1. Push this code to a fresh repo in github (5 mins)
-2. Create Vercel account (5 mins)
-3. Create free mongo atlas account and db (5 mins)
-4. Deploy code to Vercel
-5. Set environment variables `DATABASE_URL` (get this from Atlas) and `AUTH_SECRET` (can be anything)
-   - (same as what is in your local `.env` file)
-6. Redeploy after changing any env
+Rollout considerations:
 
-I'm pretty familiar with Vercel, Mongo and github, so this whole process took me about 15 minutes to get deployed to a production instance and connected to a database.
-It may take a bit longer but there shouldn't be any major blockers.
+* Don’t want to abruptly turn on device limit as it might break current paying users  
+* Need to figure out what an acceptable limit is
 
-Check out a deployed version here: (https://quickli-code-chal-stub.vercel.app/).
+## Rollout plan
 
-Here is a guide if you want one (https://create.t3.gg/en/deployment/vercel).
+* Pick a reasonable number of devices to start with. 3 seems generous enough as it allows for a phone, work PC and a home PC  
+* Enforce this for new users immediately  
+* Treat existing users more gently  
+  * Email existing users with a nice message like “to be able to continue to provide our wonderful service, Quickli will require device registration and limit the number of devices used to 3 per user.. We understand some users may need some time to transition, so for existing users the device limit will ignored for 30 days, after which time you will need to limit the number of devices per user account” … or something along those lines  
+  * Have existing users still need to register devices like normal users. If they already are at their limit, let them continue but show a message that this will be limited in future  
+  * After the 30 days are up stop letting users continue past the above if they are above their limit and on an unregistered device.
 
-## Other tidbits
+## Implementation plan
 
-- run `db:force-push` after updating the prisma schema (we don't need to worry too much about migrations because it's nosql)
-- Auth us basically textbook NextAuth with a few tweaks to make it work for username/password auth
+* Punt multi-login prevention to later, for this exercise focus on the device limit  
+* Device limit  
+  * Step 0: Add fingerprintJS and set it up  
+  * Step 1: Add table for registered user devices  
+  * Step 2: Add a field to users about whether the user is device-limited or not  
+  * Step 2: When user logs in  
+    * If their device is in the table, proceed  
+    * If their device in not in the table  
+      * If they have spare devices, ask if they want to register it.  
+        * If they say yes, record it as a registered device and proceed  
+        * If they say no, give login error ‘unregistered device’  
+      * If they don’t have spare devices  
+        * If they are a limited user, give a login error ‘unregistered device and at device limit’  
+        * If they are not, show a warning message ‘unregistered device, login will be prevented from 1 May 2025’
