@@ -1,5 +1,5 @@
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Fingerprint from "~/components/fingerprint";
@@ -35,6 +35,10 @@ export default function SignIn() {
       if (result?.error === "MAX_FINGERPRINTS_REACHED") {
         setShowWarning(true);
         setFormData({ email, password });
+      } else if (result?.error === "MAX_FINGERPRINTS_ENFORCED") {
+        setError(
+          "You have reached the maximum number of devices (3) that can be registered to your account. Please remove a device before signing in from a new one.",
+        );
       } else if (result?.error) {
         setError("Invalid credentials");
       } else {
@@ -72,6 +76,10 @@ export default function SignIn() {
     }
   };
 
+  const handleFingerprint = useCallback((fingerprint: string) => {
+    setFingerprint(fingerprint);
+  }, []);
+
   return (
     <>
       <Head>
@@ -86,7 +94,7 @@ export default function SignIn() {
               Sign in to your account
             </h2>
           </div>
-          <Fingerprint onFingerprint={setFingerprint} />
+          <Fingerprint onFingerprint={handleFingerprint} />
           {showWarning ? (
             <div className="rounded-md bg-yellow-50 p-4">
               <div className="flex">

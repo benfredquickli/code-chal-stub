@@ -86,6 +86,7 @@ const authConfig: AuthOptions = {
             data: {
               email: credentials.email,
               password: credentials.password,
+              enforceFingerprintLimit: true,
               fingerprints: {
                 create: {
                   fingerprint: credentials.fingerprint,
@@ -130,21 +131,26 @@ const authConfig: AuthOptions = {
           return user;
         }
 
-        // User has 3 or more fingerprints and this is a new one
-        // If they've acknowledged the warning, allow the sign in
-        if (credentials.acknowledgeWarning === "true") {
-          // Register the new fingerprint
-          await db.userFingerprint.create({
-            data: {
-              fingerprint: credentials.fingerprint,
-              userId: user.id,
-            },
-          });
-          return user;
+        // User has MAX_FINGERPRINTS or more fingerprints and this is a new one
+        // If limits are not enforced, show warning
+        if (!user.enforceFingerprintLimit) {
+          // If they've acknowledged the warning, allow the sign in
+          if (credentials.acknowledgeWarning === "true") {
+            // Register the new fingerprint
+            await db.userFingerprint.create({
+              data: {
+                fingerprint: credentials.fingerprint,
+                userId: user.id,
+              },
+            });
+            return user;
+          }
+          // User has 3 or more fingerprints and hasn't acknowledged the warning
+          throw new Error("MAX_FINGERPRINTS_REACHED");
         }
 
-        // User has MAX_FINGERPRINTS or more fingerprints and hasn't acknowledged the warning
-        throw new Error("MAX_FINGERPRINTS_REACHED");
+        // User has 3 or more fingerprints and limits are enforced
+        throw new Error("MAX_FINGERPRINTS_ENFORCED");
       },
     }),
   ],

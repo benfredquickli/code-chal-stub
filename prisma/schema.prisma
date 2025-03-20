@@ -68,6 +68,7 @@ model User {
     emailVerified DateTime?
     image         String?
     fingerprint   String?
+    enforceFingerprintLimit Boolean @default(false)
     accounts      Account[]
     sessions      Session[]
     quickliScenarios         SimplifiedQuickliScenario[]
