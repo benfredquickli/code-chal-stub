@@ -114,9 +114,9 @@ export default function SignIn() {
                   <div className="mt-2 text-sm text-yellow-700">
                     <p>
                       You have reached the maximum number of devices (3) that
-                      can be registered to your account. By continuing, you
-                      acknowledge that you are accessing your account from a new
-                      device.
+                      can be registered to your account. Please be aware,
+                      Quickli will soon limit the number of devices each account
+                      can use.
                     </p>
                   </div>
                   <div className="mt-4">
