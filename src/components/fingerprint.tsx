@@ -18,7 +18,6 @@ export default function Fingerprint({ onFingerprint }: Props) {
           .sort(() => Math.random() - 0.5)
           .join("");
         onFingerprint(randomizedFP);
-        console.log("fingerprint", randomizedFP);
       })
       .catch((err) => {
         console.error("Failed to generate fingerprint:", err);

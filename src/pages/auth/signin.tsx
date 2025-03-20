@@ -1,5 +1,5 @@
 import { signIn } from "next-auth/react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Fingerprint from "~/components/fingerprint";
@@ -76,10 +76,6 @@ export default function SignIn() {
     }
   };
 
-  const handleFingerprint = useCallback((fingerprint: string) => {
-    setFingerprint(fingerprint);
-  }, []);
-
   return (
     <>
       <Head>
@@ -94,7 +90,7 @@ export default function SignIn() {
               Sign in to your account
             </h2>
           </div>
-          <Fingerprint onFingerprint={handleFingerprint} />
+          <Fingerprint onFingerprint={setFingerprint} />
           {showWarning ? (
             <div className="rounded-md bg-yellow-50 p-4">
               <div className="flex">
