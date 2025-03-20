@@ -1,26 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { useEffect } from "react";
 
-interface FingerprintProps {
-  onFingerprint: (fingerprint: string | null) => void;
-}
+type Props = {
+  onFingerprint: (fingerprint: string) => void;
+};
 
-export default function Fingerprint({ onFingerprint }: FingerprintProps) {
+export default function Fingerprint({ onFingerprint }: Props) {
   useEffect(() => {
-    const getFingerprint = async () => {
-      try {
-        const fp = await FingerprintJS.load();
-        const result = await fp.get();
-        onFingerprint(result.visitorId);
-      } catch (error) {
-        console.error("Failed to generate fingerprint:", error);
-        onFingerprint(null);
-      }
-    };
-
-    void getFingerprint();
+    FingerprintJS.load().then(async (fp) => {
+      const result = await fp.get();
+      // Randomize the fingerprint for testing
+      const randomizedFP = result.visitorId
+        .split("")
+        .sort(() => Math.random() - 0.5)
+        .join("");
+      onFingerprint(randomizedFP);
+      console.log("fingerprint", randomizedFP);
+    });
   }, [onFingerprint]);
 
   return null;
