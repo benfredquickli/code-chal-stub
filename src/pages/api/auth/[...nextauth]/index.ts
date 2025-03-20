@@ -36,6 +36,9 @@ const PREPEND_COOKIENAME = process.env.VERCEL ? "__Secure-" : "";
  * @see https://next-auth.js.org/configuration/options
  */
 const authConfig: AuthOptions = {
+  pages: {
+    signIn: "/auth/signin",
+  },
   providers: [
     CredentialsProvider({
       // The name to display on the sign in form (e.g. 'Sign in with...')
@@ -45,19 +48,28 @@ const authConfig: AuthOptions = {
       // e.g. domain, username, password, 2FA token, etc.
       // You can pass any HTML attribute to the <input> tag through the object.
       credentials: {
-        username: { label: "Username", type: "text", placeholder: "jsmith" },
+        email: {
+          label: "Email",
+          type: "email",
+          placeholder: "you@example.com",
+        },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, _req) {
+      async authorize(credentials, req) {
         if (
-          !credentials?.username ||
-          typeof credentials.username !== "string" ||
-          !z.string().email().safeParse(credentials.username).success ||
+          !credentials?.email ||
+          typeof credentials.email !== "string" ||
+          !z.string().email().safeParse(credentials.email).success ||
           !credentials.password ||
           typeof credentials.password !== "string"
         ) {
           return null;
         }
+
+        // Get fingerprint from callback URL if available
+        const fingerprint = req?.query?.fingerprint as string | undefined;
+
+        console.log("fingerprint", fingerprint);
 
         // You need to provide your own logic here that takes the credentials
         // submitted and returns either a object representing a user or value
@@ -67,7 +79,7 @@ const authConfig: AuthOptions = {
         // (i.e., the request IP address)
         const user = await db.user.findFirst({
           where: {
-            email: credentials.username,
+            email: credentials.email,
             // password: credentials.password,
           },
         });
@@ -75,14 +87,12 @@ const authConfig: AuthOptions = {
         if (!user) {
           const newUser = await db.user.create({
             data: {
-              email: credentials.username,
+              email: credentials.email,
               password: credentials.password,
             },
           });
           return newUser;
         }
-
-        console.log(user, credentials);
 
         if (user.password !== credentials.password) {
           return null;
