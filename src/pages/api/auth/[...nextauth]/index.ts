@@ -30,6 +30,8 @@ declare module "next-auth" {
 
 const PREPEND_COOKIENAME = process.env.VERCEL ? "__Secure-" : "";
 
+const MAX_FINGERPRINTS = 3;
+
 /**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
@@ -55,8 +57,9 @@ const authConfig: AuthOptions = {
         },
         password: { label: "Password", type: "password" },
         fingerprint: { label: "Fingerprint", type: "text" },
+        acknowledgeWarning: { label: "Acknowledge Warning", type: "boolean" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (
           !credentials?.email ||
           typeof credentials.email !== "string" ||
@@ -69,18 +72,9 @@ const authConfig: AuthOptions = {
           return null;
         }
 
-        console.log("fingerprint", credentials.fingerprint);
-
-        // You need to provide your own logic here that takes the credentials
-        // submitted and returns either a object representing a user or value
-        // that is false/null if the credentials are invalid.
-        // e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
-        // You can also use the `req` object to obtain additional parameters
-        // (i.e., the request IP address)
         const user = await db.user.findFirst({
           where: {
             email: credentials.email,
-            // password: credentials.password,
           },
           include: {
             fingerprints: true,
@@ -114,7 +108,18 @@ const authConfig: AuthOptions = {
           (f) => f.fingerprint === credentials.fingerprint,
         );
 
-        if (!existingFingerprint) {
+        if (existingFingerprint) {
+          // Update last used timestamp
+          await db.userFingerprint.update({
+            where: { id: existingFingerprint.id },
+            data: { lastUsed: new Date() },
+          });
+          return user;
+        }
+
+        // If we get here, this is a new fingerprint
+        // Check if user has less than MAX_FINGERPRINTS fingerprints
+        if (user.fingerprints.length < MAX_FINGERPRINTS) {
           // Register the new fingerprint
           await db.userFingerprint.create({
             data: {
@@ -122,15 +127,24 @@ const authConfig: AuthOptions = {
               userId: user.id,
             },
           });
-        } else {
-          // Update last used timestamp
-          await db.userFingerprint.update({
-            where: { id: existingFingerprint.id },
-            data: { lastUsed: new Date() },
-          });
+          return user;
         }
 
-        return user;
+        // User has 3 or more fingerprints and this is a new one
+        // If they've acknowledged the warning, allow the sign in
+        if (credentials.acknowledgeWarning === "true") {
+          // Register the new fingerprint
+          await db.userFingerprint.create({
+            data: {
+              fingerprint: credentials.fingerprint,
+              userId: user.id,
+            },
+          });
+          return user;
+        }
+
+        // User has MAX_FINGERPRINTS or more fingerprints and hasn't acknowledged the warning
+        throw new Error("MAX_FINGERPRINTS_REACHED");
       },
     }),
   ],
