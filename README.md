@@ -19,6 +19,8 @@ There is a lot more to do:
 
 Overall I don't feel happy with the code or the end result, I would want to review the code and talk through the approach if this was a real world thing.
 
+(and i just noticed the left padding in the edits is a bit off, that was fixed but it got lost when I reverted the device naming code which had broken the limit checking).
+
 ## Problem: Prevent people sharing their Quickli login
 
 Solution:
