@@ -54,6 +54,7 @@ const authConfig: AuthOptions = {
           placeholder: "you@example.com",
         },
         password: { label: "Password", type: "password" },
+        fingerprint: { label: "Fingerprint", type: "text" },
       },
       async authorize(credentials, req) {
         if (
@@ -61,15 +62,14 @@ const authConfig: AuthOptions = {
           typeof credentials.email !== "string" ||
           !z.string().email().safeParse(credentials.email).success ||
           !credentials.password ||
-          typeof credentials.password !== "string"
+          typeof credentials.password !== "string" ||
+          !credentials.fingerprint ||
+          typeof credentials.fingerprint !== "string"
         ) {
           return null;
         }
 
-        // Get fingerprint from callback URL if available
-        const fingerprint = req?.query?.fingerprint as string | undefined;
-
-        console.log("fingerprint", fingerprint);
+        console.log("fingerprint", credentials.fingerprint);
 
         // You need to provide your own logic here that takes the credentials
         // submitted and returns either a object representing a user or value

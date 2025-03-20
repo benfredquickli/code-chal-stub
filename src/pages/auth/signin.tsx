@@ -2,11 +2,13 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Fingerprint from "~/components/fingerprint";
 
 export default function SignIn() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,6 +23,7 @@ export default function SignIn() {
       const result = await signIn("credentials", {
         email,
         password,
+        fingerprint,
         redirect: false,
       });
 
@@ -51,6 +54,7 @@ export default function SignIn() {
               Sign in to your account
             </h2>
           </div>
+          <Fingerprint onFingerprint={setFingerprint} />
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="-space-y-px rounded-md shadow-sm">
               <div>
@@ -90,7 +94,7 @@ export default function SignIn() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !fingerprint}
                 className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
               >
                 {isLoading ? "Signing in..." : "Sign in"}
