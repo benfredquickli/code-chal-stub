@@ -72,6 +72,19 @@ model User {
     sessions      Session[]
     quickliScenarios         SimplifiedQuickliScenario[]
     posts         Post[]
+    fingerprints  UserFingerprint[]
+}
+
+model UserFingerprint {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    fingerprint String
+    createdAt DateTime @default(now())
+    lastUsed  DateTime @updatedAt
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId    String   @db.ObjectId
+
+    @@unique([userId, fingerprint])
+    @@index([fingerprint])
 }
 
 model VerificationToken {

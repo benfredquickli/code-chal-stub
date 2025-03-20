@@ -82,6 +82,9 @@ const authConfig: AuthOptions = {
             email: credentials.email,
             // password: credentials.password,
           },
+          include: {
+            fingerprints: true,
+          },
         });
 
         if (!user) {
@@ -89,6 +92,14 @@ const authConfig: AuthOptions = {
             data: {
               email: credentials.email,
               password: credentials.password,
+              fingerprints: {
+                create: {
+                  fingerprint: credentials.fingerprint,
+                },
+              },
+            },
+            include: {
+              fingerprints: true,
             },
           });
           return newUser;
@@ -96,6 +107,27 @@ const authConfig: AuthOptions = {
 
         if (user.password !== credentials.password) {
           return null;
+        }
+
+        // Check if this fingerprint is already registered for this user
+        const existingFingerprint = user.fingerprints.find(
+          (f) => f.fingerprint === credentials.fingerprint,
+        );
+
+        if (!existingFingerprint) {
+          // Register the new fingerprint
+          await db.userFingerprint.create({
+            data: {
+              fingerprint: credentials.fingerprint,
+              userId: user.id,
+            },
+          });
+        } else {
+          // Update last used timestamp
+          await db.userFingerprint.update({
+            where: { id: existingFingerprint.id },
+            data: { lastUsed: new Date() },
+          });
         }
 
         return user;
